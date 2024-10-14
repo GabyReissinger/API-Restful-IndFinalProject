@@ -17,7 +17,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.org.serratec.apiindfinalproject.domain.Livro;
+import br.org.serratec.apiindfinalproject.domain.Publicacao;
 import br.org.serratec.apiindfinalproject.repository.LivroRepository;
+import br.org.serratec.apiindfinalproject.repository.PublicacaoRepository;
 import jakarta.validation.Valid;
 
 @RestController
@@ -26,6 +28,9 @@ public class LivroController {
 
 	@Autowired
 	private LivroRepository livroRepository;
+
+	@Autowired
+	private PublicacaoRepository publicacaoRepository;
 
 	@GetMapping
 	public ResponseEntity<List<Livro>> listar() {
@@ -43,26 +48,32 @@ public class LivroController {
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	public Livro inserir(@Valid @RequestBody Livro livro) {
-		livro = livroRepository.save(livro);
-		return livro;
+	public ResponseEntity<Livro> criarLivro(@Valid @RequestBody Livro livro) {
+		Publicacao publicacao = livro.getPublicacao();
+		if (publicacao != null) {
+			publicacao = publicacaoRepository.save(publicacao);
+			livro.setPublicacao(publicacao);
+		}
+
+		Livro livroSalvo = livroRepository.save(livro);
+		return new ResponseEntity<>(livroSalvo, HttpStatus.CREATED);
 	}
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Livro> atualizarLivro(@PathVariable Long id, @Valid @RequestBody Livro livroDetalhes) {
-        Optional<Livro> livroOpt = livroRepository.findById(id);
+	@PutMapping("/{id}")
+	public ResponseEntity<Livro> atualizarLivro(@PathVariable Long id, @Valid @RequestBody Livro livroDetalhes) {
+		Optional<Livro> livroOpt = livroRepository.findById(id);
 
-        if (livroOpt.isPresent()) {
-            Livro livro = livroOpt.get();
-            livro.setTitulo(livroDetalhes.getTitulo());
-            livro.setQntPaginas(livroDetalhes.getQntPaginas());
-            livro.setPublicacao(livroDetalhes.getPublicacao());
-            Livro livroAtualizado = livroRepository.save(livro);
-            return ResponseEntity.ok(livroAtualizado);
-        }
+		if (livroOpt.isPresent()) {
+			Livro livro = livroOpt.get();
+			livro.setTitulo(livroDetalhes.getTitulo());
+			livro.setQntPaginas(livroDetalhes.getQntPaginas());
+			livro.setPublicacao(livroDetalhes.getPublicacao());
+			Livro livroAtualizado = livroRepository.save(livro);
+			return ResponseEntity.ok(livroAtualizado);
+		}
 
-        return ResponseEntity.notFound().build();
-    }
+		return ResponseEntity.notFound().build();
+	}
 
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Void> remover(@PathVariable Long id) {
